@@ -2,7 +2,7 @@ package main
 
 import (
 //	"errors"
-//	"fmt"
+	"fmt"
 
 	"os"
 
@@ -19,11 +19,32 @@ type ServiceSession struct {
 
 
 func main () {
+	profile := ""
+	var sess *session.Session
+	switch len(os.Args) {
+		case 3:
+			if os.Args[1] == "-p" {
+				profile = os.Args[2]
+				sess = session.Must(session.NewSessionWithOptions(session.Options{
+					SharedConfigState: session.SharedConfigEnable,
+					Profile: profile,
+				}))
+			}
+		case 1:
+				sess = session.Must(session.NewSessionWithOptions(session.Options{
+				SharedConfigState: session.SharedConfigEnable,
+				}))
+
+		default:
+			fmt.Printf("Incorrect number of command line arguments: %v\n", len(os.Args) -1)
+				os.Exit(1)
+	}
+	
 	pwd := "/"
 	var list map [string]string
-	sess := session.Must(session.NewSessionWithOptions(session.Options{
-		SharedConfigState: session.SharedConfigEnable,
-		}))
+//	sess := session.Must(session.NewSessionWithOptions(session.Options{
+//		SharedConfigState: session.SharedConfigEnable,
+//		}))
 	svc := s3.New(sess)
 
 
