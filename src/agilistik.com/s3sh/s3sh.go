@@ -11,13 +11,19 @@ import (
 
 	"github.com/abiosoft/ishell"
 
-	"github.com/aws/aws-sdk-go/aws"
+//	"github.com/aws/aws-sdk-go/aws"
 //	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 
 )
+
+type ServiceSession struct {
+        Sess *session.Session
+        Svc *s3.S3
+}
+
 
 func main () {
 	pwd := "/"
@@ -29,7 +35,10 @@ func main () {
 		}))
 	svc := s3.New(sess)
 
+
 	shell := ishell.New()
+	
+	service := ServiceSession {sess, svc}
 
 	//display info
 	shell.Println("S3 Shell")
@@ -51,7 +60,7 @@ func main () {
                 		prefix = prefix + "/"
         		}
 			fullKey := prefix + key
-			downloader = s3manager.NewDownloader(sess)
+			downloader = s3manager.NewDownloader(service.Sess)
 			f, err := os.Create(key)
 			if err != nil {
 				c.Println("Can't create local file " + key)
@@ -76,18 +85,7 @@ func main () {
 		Name: "cr",
 		Help: "change region",
 		Func: func(c *ishell.Context){
-			if len(c.Args) > 0 {
-				sess = session.Must(session.NewSessionWithOptions(session.Options{
-                SharedConfigState: session.SharedConfigEnable,
-		Config: aws.Config{Region: &c.Args[0] },
-                }))
-				svc = s3.New(sess) 
-				//svc = s3.New(sess, aws.NewConfig().WithRegion(c.Args[0])) 
-			}  
-		        if len(c.Args) == 0 {
-				c.Println("Please specify region name.")
-				return
-			}   
+		cr(c, &service)
 		},
 	})
 
@@ -96,7 +94,7 @@ func main () {
 		Name: "ls",
 		Help: "list objects",
 		Func: func(c *ishell.Context){
-			list = ls (c, svc, &pwd, sess)
+			list = ls (c, &pwd, &service)
 			for r,v := range list {
 				if len(v) > 0 {	
 					c.Print(v + "\t")
@@ -135,7 +133,7 @@ func main () {
 		Name: "cd",
 		Help: "change directory",
 		Func: func(c *ishell.Context){
-			cd(c, svc, &pwd, sess)
+			cd(c, &pwd, &service)
 		},
 	})
 

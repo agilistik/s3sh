@@ -13,7 +13,7 @@ import (
         "github.com/aws/aws-sdk-go/service/s3/s3manager"
 )
 
-func cd (c *ishell.Context,svc *s3.S3, pwd *string, sess *session.Session) {
+func cd (c *ishell.Context, pwd *string, service *ServiceSession) {
         d := "/"
         if len(c.Args) > 0 {
                 d = c.Args[0]
@@ -32,7 +32,7 @@ func cd (c *ishell.Context,svc *s3.S3, pwd *string, sess *session.Session) {
                 }
         } else {
 //Check whether the target prefix exists
-                list := ls (c, svc, pwd, sess)
+                list := ls (c, pwd, service)
                 updated := false
                 for  p,_ := range list {
                         if p ==  d {
@@ -44,7 +44,6 @@ func cd (c *ishell.Context,svc *s3.S3, pwd *string, sess *session.Session) {
                         c.Println("Prefix " + d +  " does not exist.")
 
                 }
-                //*pwd = *pwd + d + "/"
         }
         if strings.LastIndex(*pwd, "/") != len(*pwd) - 1{
                 *pwd = *pwd + "/"
@@ -53,6 +52,22 @@ func cd (c *ishell.Context,svc *s3.S3, pwd *string, sess *session.Session) {
                 *pwd = "/"
         }
 }
+
+
+func cr (c *ishell.Context, service *ServiceSession) {
+	  if len(c.Args) > 0 {
+                                service.Sess = session.Must(session.NewSessionWithOptions(session.Options{
+                SharedConfigState: session.SharedConfigEnable,
+                Config: aws.Config{Region: &c.Args[0] },
+                }))
+                                service.Svc = s3.New(service.Sess)
+                        }
+                        if len(c.Args) == 0 {
+                                c.Println("Please specify region name.")
+                                return
+                        }
+}
+	
 
 func describe (c *ishell.Context, svc *s3.S3, pwd *string, obj string) {
         bucket := strings.SplitAfter(*pwd, "/")[1]
@@ -87,22 +102,17 @@ func describe (c *ishell.Context, svc *s3.S3, pwd *string, obj string) {
 }
 
 
-func ls (c *ishell.Context, svc *s3.S3, pwd *string, sess *session.Session) map[string]string  {
-//      var list [] string
+func ls (c *ishell.Context, pwd *string, service *ServiceSession) map[string]string  {
         list := make(map[string]string)
         if *pwd == "/" {
-                //c.Println("Buckets:")
-                result, err := svc.ListBuckets(nil)
+                result, err := service.Svc.ListBuckets(nil)
                 if err != nil {
                         c.Println("Unable to list objects.")
                 }
                 for _, b := range result.Buckets {
-                //      c.Printf("* %s created on %s\n", aws.StringValue(b.Name), aws.TimeValue(b.CreationDate))
                 // find bucket's region
                         ctx := context.Background()
-                        //cfg := sess.ClientConfig("s3")
-                        region,_ := s3manager.GetBucketRegion (ctx, sess, aws.StringValue(b.Name), "us-west-2")
-                        //list = append(list, aws.StringValue(&region) + " " +  aws.StringValue(b.Name))
+                        region,_ := s3manager.GetBucketRegion (ctx, service.Sess, aws.StringValue(b.Name), "us-west-2")
                         list[aws.StringValue(b.Name)] = aws.StringValue(&region)
                 }
         } else {
@@ -125,7 +135,7 @@ func ls (c *ishell.Context, svc *s3.S3, pwd *string, sess *session.Session) map[
                         MaxKeys:aws.Int64(1024),
                         Prefix: &prefix,
                 }
-                result, err := svc.ListObjectsV2(input)
+                result, err := service.Svc.ListObjectsV2(input)
               if err != nil {
                         if aerr, ok := err.(awserr.Error); ok {
                                 switch aerr.Code() {
@@ -155,8 +165,6 @@ func ls (c *ishell.Context, svc *s3.S3, pwd *string, sess *session.Session) map[
                 }
 
                         for k := range keys.set {
-                        //      c.Println(k)
-                                //list = append(list,k)
                                 list[k] = ""
                         }
         }
