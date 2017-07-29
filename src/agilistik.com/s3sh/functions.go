@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"os"
 	"strings"
 	
 	"github.com/abiosoft/ishell"
@@ -100,6 +101,50 @@ func describe (c *ishell.Context, svc *s3.S3, pwd *string, obj string) {
         }
         c.Println(result)
 }
+
+
+
+
+func get (c *ishell.Context, pwd *string, service *ServiceSession) {
+	 key := c.Args[0]
+         bucket := strings.SplitAfter(*pwd, "/")[1]
+         if strings.LastIndex(bucket, "/") == len(bucket) -1 {
+	       	 bucket = bucket[:len(bucket) - 1]
+          }
+         prefix := strings.SplitAfter(*pwd, bucket)[1]
+         if strings.Index(prefix, "/") == 0 {
+                 prefix = prefix[1:]
+         }
+         if strings.LastIndex(prefix, "/") != len(prefix) - 1 {
+                 prefix = prefix + "/"
+         }
+         fullKey := prefix + key
+         downloader := s3manager.NewDownloader(service.Sess)
+         f, err := os.Create(key)
+         if err != nil {
+                 c.Println("Can't create local file " + key)
+                 c.Println("%v", err)
+                 return
+         }
+         n, err := downloader.Download(f, &s3.GetObjectInput{
+                 Bucket: &bucket,
+                 Key:  &fullKey,
+         })
+         if err != nil {
+                 c.Printf("Failed to download file %v\n", key)
+                 c.Printf("%v\n", err)
+                 return
+         }
+         c.Printf("Downloaded %v bytes\n", n)
+}
+
+
+
+
+
+
+
+
 
 
 func ls (c *ishell.Context, pwd *string, service *ServiceSession) map[string]string  {
