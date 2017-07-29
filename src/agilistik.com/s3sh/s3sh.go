@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"os"
+	"sort"
 
 	"github.com/abiosoft/ishell"
 
@@ -77,11 +78,16 @@ func main () {
 		Help: "list objects",
 		Func: func(c *ishell.Context){
 			list = ls (c, &pwd, &service)
-			for r,v := range list {
-				if len(v) > 0 {	
-					c.Print(v + "\t")
+			keys := make([]string, len(list))
+			for r:= range list {
+				keys = append(keys, r)
+			}
+			sort.Strings(keys)
+			for r := range keys {
+				if len(list[keys[r]]) > 0 {	
+					c.Print(list[keys[r]] + "\t")
 				}
-				c.Println(r)
+				c.Println(keys[r])
 			}
 		},
 	}) 
