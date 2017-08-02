@@ -77,7 +77,7 @@ func main () {
 		Name: "ls",
 		Help: "list objects",
 		Func: func(c *ishell.Context){
-			list = ls (c, &pwd, &service)
+			list,_ = ls (c, &pwd, &service)
 			keys := make([]string, len(list))
 			for r:= range list {
 				keys = append(keys, r)
@@ -121,7 +121,7 @@ func main () {
 		Name: "cd",
 		Help: "change directory",
 		Func: func(c *ishell.Context){
-			cd(c, &pwd, &service)
+		pwd =	cd(c, &pwd, &service)
 		},
 	})
 

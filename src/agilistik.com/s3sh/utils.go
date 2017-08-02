@@ -1,5 +1,9 @@
 package main
 
+import (
+	"strings"
+)
+
 type StrSet struct {
         set map[string]bool
 }
@@ -21,6 +25,32 @@ func StringInSlice(a string, list [] string) bool {
                 }
         }
         return false
+}
+
+func BuildPath (startPath, addPath string) []string  {
+	startArray	:= strings.Split(startPath, "/")
+	addArray	:= strings.Split(addPath, "/")
+	if strings.Index(addPath, "/") == 0 {
+		return addArray
+	}
+	resArray	:= make([]string, len(startArray) + len(addArray))
+	copy (resArray, startArray)
+	addIndex := len(startArray)
+	
+	for _, j := range (addArray) {
+		if j == ".." {
+			if addIndex > 1 {	
+				addIndex = addIndex - 1
+			}
+		} else {
+			if j != "." {
+				resArray[addIndex] = j
+				addIndex = addIndex + 1
+			}
+		}
+	}
+	return resArray[:addIndex]
+	
 }
 
 

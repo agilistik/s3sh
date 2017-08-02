@@ -14,44 +14,53 @@ import (
         "github.com/aws/aws-sdk-go/service/s3/s3manager"
 )
 
-func cd (c *ishell.Context, pwd *string, service *ServiceSession) {
+func cd (c *ishell.Context, pwd *string, service *ServiceSession) string {
         d := "/"
+	newPath := "/"
+	oneLevelUp := "/"
+
+	var baseDir string
+	var pathArr []string
+
         if len(c.Args) > 0 {
                 d = c.Args[0]
+		if d == "/" {
+			return d
+		}
+		pathArr = BuildPath(*pwd, d)
+		newPath = strings.Join(pathArr, "/")
+		if strings.Index(newPath, "//") == 0 {
+			newPath = newPath[1:]
+		}
+		if pathArr[len(pathArr) - 1] != "" {
+			baseDir = pathArr[len(pathArr) - 1]
+		}
+		if len(pathArr) > 2 && pathArr[len(pathArr)  - 2] != "" {
+			oneLevelUp = strings.Join(pathArr[:len(pathArr) - 1], "/")
+		}
         }
-        if strings.Index(d, "/") == 0 {
-                *pwd = d
-        } else if d == "." {
-        } else if d == ".." {
-                if *pwd != "/" {
-// Can't slice a string pointer. 
-// Until I find a better way, will need to use a temp variable
-                        _pwd := *pwd
-                        _pwd = _pwd[:len(_pwd) - 2]
-                        _pwd = _pwd[:strings.LastIndex(_pwd, "/")]
-                        *pwd = _pwd
-                }
-        } else {
-//Check whether the target prefix exists
-                list := ls (c, pwd, service)
-                updated := false
-                for  p,_ := range list {
-                        if p ==  d {
-                                *pwd = *pwd + d + "/"
-                                updated = true
-                        }
-                }
-                if !updated {
-                        c.Println("Prefix " + d +  " does not exist.")
+	if d == ".." || d == "../" || len(c.Args) == 0 {
+		return newPath
+	}
+	
+	if strings.Index(oneLevelUp, "//") == 0 {
+		oneLevelUp = oneLevelUp[1:]
+	}
 
-                }
-        }
-        if strings.LastIndex(*pwd, "/") != len(*pwd) - 1{
-                *pwd = *pwd + "/"
-        }
-        if *pwd == "" {
-                *pwd = "/"
-        }
+
+        list,err := _ls (c, &oneLevelUp, service)
+
+	if err == nil {
+		for p, _ := range list {
+				if p == baseDir {
+						return newPath
+					}
+			}
+		c.Println("Path " + d +  " does not exist, or you don't have access to it.")
+
+
+		}
+	return  *pwd
 }
 
 
@@ -102,9 +111,6 @@ func describe (c *ishell.Context, svc *s3.S3, pwd *string, obj string) {
         c.Println(result)
 }
 
-
-
-
 func get (c *ishell.Context, pwd *string, service *ServiceSession) {
 	 key := c.Args[0]
          bucket := strings.SplitAfter(*pwd, "/")[1]
@@ -139,60 +145,54 @@ func get (c *ishell.Context, pwd *string, service *ServiceSession) {
 }
 
 
-
-
-
-
-
-
-
-
-func ls (c *ishell.Context, pwd *string, service *ServiceSession) map[string]string  {
-        list := make(map[string]string)
-        if *pwd == "/" {
-                result, err := service.Svc.ListBuckets(nil)
-                if err != nil {
-                        c.Println("Unable to list objects.")
-                }
-                for _, b := range result.Buckets {
-                // find bucket's region
-                        ctx := context.Background()
-                        region,_ := s3manager.GetBucketRegion (ctx, service.Sess, aws.StringValue(b.Name), "us-west-2")
-                        list[aws.StringValue(b.Name)] = aws.StringValue(&region)
-                }
-        } else {
-                // maybe move to main(), and keep path there?
-                bucket := strings.SplitAfter(*pwd, "/")[1]
-                if strings.LastIndex(bucket, "/") == len(bucket) -1 {
-                        bucket = bucket[:len(bucket) - 1]
-                }
-                c.Println("Bucket: " + bucket)
-                prefix := strings.SplitAfter(*pwd, bucket)[1]
-                if strings.LastIndex(prefix, "/") == len(prefix) -1 {
-                        prefix = prefix[:len(prefix) - 1]
-                }
-                if strings.Index(prefix, "/") == 0 {
-                        prefix = prefix[1:]
-                }
-                c.Println("Prefix: " + prefix)
-                input := &s3.ListObjectsV2Input{
-                        Bucket: aws.String(bucket),
-                        MaxKeys:aws.Int64(1024),
-                        Prefix: &prefix,
-                }
-                result, err := service.Svc.ListObjectsV2(input)
-              if err != nil {
-                        if aerr, ok := err.(awserr.Error); ok {
-                                switch aerr.Code() {
-                                        case s3.ErrCodeNoSuchBucket:
-                                                c.Println(s3.ErrCodeNoSuchBucket, aerr.Error())
+func _ls (c *ishell.Context, pwd *string, service *ServiceSession) (map[string]string, error ) {
+	var err error = nil
+	list := make(map[string]string)
+	target := pwd
+	if *target == "/" || *target == "" {
+        	result, err := service.Svc.ListBuckets(nil)
+	        if err != nil {
+               		c.Println("Unable to list objects.")
+       		}
+        	for _, b := range result.Buckets {
+        	// find bucket's region
+			ctx := context.Background()
+               		region,_ := s3manager.GetBucketRegion (ctx, service.Sess, aws.StringValue(b.Name), "us-west-2")
+               		list[aws.StringValue(b.Name)] = aws.StringValue(&region)
+		        }
+	        } else {
+                	bucket := strings.SplitAfter(*target, "/")[1]
+                	if strings.LastIndex(bucket, "/") == len(bucket) -1 {
+                       		 bucket = bucket[:len(bucket) - 1]
+               		 }
+                	c.Println("Bucket: " + bucket)
+                	prefix := strings.SplitAfter(*target, bucket)[1]
+                	if strings.LastIndex(prefix, "/") == len(prefix) -1 && len(prefix) > 1 {
+                       		 prefix = prefix[:len(prefix) - 1]
+                	}
+                	if strings.Index(prefix, "/") == 0 {
+                       		 prefix = prefix[1:]
+               		}
+                	c.Println("Prefix: " + prefix)
+                	input := &s3.ListObjectsV2Input{
+                       	 Bucket: aws.String(bucket),
+                       	 MaxKeys:aws.Int64(1024),
+                       	 Prefix: &prefix,
+               		 }
+                	result, err := service.Svc.ListObjectsV2(input)
+              		if err != nil {
+               		         c.Println("ERROR in ls...")
+               		         if aerr, ok := err.(awserr.Error); ok {
+               		                 switch aerr.Code() {
+               		                         case s3.ErrCodeNoSuchBucket:
+                	                                 c.Println(s3.ErrCodeNoSuchBucket, aerr.Error())
                                         default:
                                                 c.Println(aerr.Error())
                                                 }
                                         } else {
-                                c.Println(err.Error())
+                               			 c.Println(err.Error())
                                 }
-                        return list
+                        return list, err
                         }
 
                 keys := NewStrSet()
@@ -213,7 +213,30 @@ func ls (c *ishell.Context, pwd *string, service *ServiceSession) map[string]str
                                 list[k] = ""
                         }
         }
-        return list
+        return list, err
+}
+
+func ls (c *ishell.Context, pwd *string, service *ServiceSession) (map[string]string, error)  {
+	var err error = nil
+	var target *string
+	if len(c.Args) > 0 {
+		target = &c.Args[0]
+		if *target == "." || *target == "./" {
+			target = pwd
+		} else {
+			pathArr := BuildPath(*pwd, *target)
+			_target := strings.Join(pathArr, "/")
+			if strings.Index(_target, "//") == 0 {
+				_target = _target[1:]
+			}
+			target = &_target
+		}
+	} else {
+		target = pwd
+	}
+	r,err := _ls  (c,target,service)
+	return r, err
+
 }
 
 func printdir (c *ishell.Context, pwd *string){
