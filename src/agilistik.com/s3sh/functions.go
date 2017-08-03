@@ -277,3 +277,38 @@ func printdir (c *ishell.Context, pwd *string){
         c.Printf("%s\n", *pwd)
 }
 
+func put (c *ishell.Context, pwd *string, service *ServiceSession) {
+	key := c.Args[0]
+	// Might need to process the path to get the filename.
+	// Consider BuildPath -- and then usng baseName as the key
+	// Or, take last element of stirngs.Split(key "/")
+
+	bucket := strings.SplitAfter(*pwd, "/")[1]
+	if strings.LastIndex(bucket, "/") == len(bucket) -1 {
+                 bucket = bucket[:len(bucket) - 1]
+          }
+	prefix := strings.SplitAfter(*pwd, bucket)[1]
+         if strings.Index(prefix, "/") == 0 {
+                 prefix = prefix[1:]
+         }
+         if strings.LastIndex(prefix, "/") != len(prefix) - 1 {
+                 prefix = prefix + "/"
+         }
+         fullKey := prefix + key
+
+
+	
+	uploader := s3manager.NewUploader(service.Sess)
+	f, err := os.Open(key)
+	if err != nil {
+		c.Println("Can't open the file.")
+		return
+	}
+	res, err := uploader.Upload(&s3manager.UploadInput{
+			Bucket: &bucket,
+			Key: 	&fullKey,
+			Body:   f,
+		})
+	c.Printf("File %v uploaded to %v\n", c.Args[0], res.Location)
+	//c.Printf("File %v uploaded to %v\n", c.Args[0], aws.StringValue(res.Location))
+}

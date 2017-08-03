@@ -43,9 +43,6 @@ func main () {
 	
 	pwd := "/"
 	var list map [string]string
-//	sess := session.Must(session.NewSessionWithOptions(session.Options{
-//		SharedConfigState: session.SharedConfigEnable,
-//		}))
 	svc := s3.New(sess)
 
 
@@ -55,6 +52,16 @@ func main () {
 
 	//display info
 	shell.Println("S3 Shell")
+
+	shell.AddCmd(&ishell.Cmd{
+		Name: "put",
+		Help: "upload a file to s3",
+		Func:  func(c *ishell.Context){
+			put (c, &pwd, &service)
+		},
+	})
+
+
 
 	shell.AddCmd(&ishell.Cmd{
 		Name: "get",
