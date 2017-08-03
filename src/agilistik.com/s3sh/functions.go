@@ -113,6 +113,40 @@ func describe (c *ishell.Context, svc *s3.S3, pwd *string, obj string) {
 
 func get (c *ishell.Context, pwd *string, service *ServiceSession) {
 	 key := c.Args[0]
+	 var currDir string
+	 if len(c.Args) > 1 {
+// Check whether the directory exists
+		_, err := os.Stat(c.Args[1])
+		//dirInfo, err := os.Stat(c.Args[1])
+		if err != nil {
+			err = os.MkdirAll (c.Args[1], 777)
+			if err != nil {
+				c.Println("The local directory doesn't exist, and can't be created.")
+				return
+			}
+		}
+/*
+		if ! dirInfo.Mode().isDir() {
+			c.Println("The target path exists, and is not a directory.")
+			return
+			}
+*/
+		currDir, err = os.Getwd()
+		if err != nil {
+			c.Println("Can't get the current directory.")
+			return
+			}
+		err = os.Chdir(c.Args[1])
+		defer os.Chdir(currDir)
+		if err != nil {
+			c.Println("Can't change directory.")
+			return
+		}
+				
+
+
+
+	}
          bucket := strings.SplitAfter(*pwd, "/")[1]
          if strings.LastIndex(bucket, "/") == len(bucket) -1 {
 	       	 bucket = bucket[:len(bucket) - 1]
