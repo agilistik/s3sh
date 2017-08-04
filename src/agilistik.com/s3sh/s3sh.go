@@ -84,12 +84,16 @@ func main () {
 		Name: "ls",
 		Help: "list objects",
 		Func: func(c *ishell.Context){
+// Get the map with the 'ls' results...
 			list,_ = ls (c, &pwd, &service)
+// build an array of the keys in the results map...
 			keys := make([]string, len(list))
 			for r:= range list {
 				keys = append(keys, r)
 			}
+// sort the array
 			sort.Strings(keys)
+// and print the results, sorted.
 			for r := range keys {
 				if len(list[keys[r]]) > 0 {	
 					c.Print(list[keys[r]] + "\t")
