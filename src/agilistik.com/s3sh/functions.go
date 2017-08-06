@@ -244,15 +244,18 @@ func get (c *ishell.Context, pwd *string, service *ServiceSession) {
 */
 func history (c *ishell.Context, h *Hist) {
 // h.history, h.nextPos
+	j := 1
 	for i:= h.nextPos - 1; i < len(h.history); i ++ {
 		if len(h.history[i]) > 0 {
-			c.Println(h.history[i])
+			c.Printf("%3v   %v\n", j, h.history[i])
+			j++
 		}
 	}	
 	if h.nextPos > 0 {
 		for i := 0; i < h.nextPos; i++ {
 			if len(h.history[i]) > 0 {
-				c.Println(h.history[i])
+				c.Printf("%3v   %v\n", j, h.history[i])
+                       		 j++
 			}
 		} 
 	}
