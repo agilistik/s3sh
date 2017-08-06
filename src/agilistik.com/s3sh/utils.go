@@ -31,6 +31,26 @@ func StringInSlice(a string, list [] string) bool {
 }
 
 /*
+	Tracking history of commands
+*/
+type Hist struct {
+	history [] string
+	nextPos int
+}
+
+func NewHist (size int) *Hist {
+	return &Hist{make([]string, size), 0}
+}
+
+func (hist *Hist) Add (s string) {
+	hist.history[hist.nextPos] = s
+	hist.nextPos = hist.nextPos + 1
+	if hist.nextPos == len(hist.history)  {
+		hist.nextPos = 0		
+	}
+}
+
+/*
 	Input:  starting piont, usually pwd; and, new path.
 	Output:  the new path, if it is absolute.
 		Otherwise, starting piont + new path, with correct resolution of '.' and '..'

@@ -6,6 +6,7 @@ import (
 
 	"os"
 	"sort"
+	"strings"
 
 	"github.com/abiosoft/ishell"
 
@@ -21,6 +22,7 @@ type ServiceSession struct {
 
 func main () {
 	profile := ""
+	histSize := 50
 	var sess *session.Session
 	switch len(os.Args) {
 		case 3:
@@ -40,7 +42,8 @@ func main () {
 			fmt.Printf("Incorrect number of command line arguments: %v\n", len(os.Args) -1)
 				os.Exit(1)
 	}
-	
+
+	h := NewHist(histSize)	
 	pwd := "/"
 	var list map [string]string
 	svc := s3.New(sess)
@@ -57,6 +60,7 @@ func main () {
 		Name: "put",
 		Help: "upload a file to s3",
 		Func:  func(c *ishell.Context){
+			h.Add("put " + strings.Join(c.Args, " "))
 			put (c, &pwd, &service)
 		},
 	})
@@ -67,6 +71,7 @@ func main () {
 		Name: "get",
 		Help: "download an object",
 		Func: func(c *ishell.Context){
+			h.Add("get " + strings.Join(c.Args, " "))
 			get (c, &pwd, &service)
 		},
 	})
@@ -75,15 +80,26 @@ func main () {
 		Name: "cr",
 		Help: "change region",
 		Func: func(c *ishell.Context){
+		h.Add("cr " + strings.Join(c.Args, " "))
 		cr(c, &service)
 		},
 	})
 
 
 	shell.AddCmd(&ishell.Cmd{
+		Name: "history",
+		Help: "show history of commands",
+		Func: func(c *ishell.Context){
+		h.Add("history")
+		history(c, h)
+		},
+	})
+
+	shell.AddCmd(&ishell.Cmd{
 		Name: "ls",
 		Help: "list objects",
 		Func: func(c *ishell.Context){
+			h.Add("ls " + strings.Join(c.Args, " "))
 // Get the map with the 'ls' results...
 			list,_ = ls (c, &pwd, &service)
 // build an array of the keys in the results map...
@@ -107,6 +123,7 @@ func main () {
 		Name: "desc",
 		Help: "describe object's metadata",
 		Func: func (c *ishell.Context) {
+			h.Add("desc " + strings.Join(c.Args, " "))
 			obj := ""
 			if len(c.Args) > 0 {
 				obj = c.Args[0]
@@ -124,6 +141,7 @@ func main () {
 		Name: "pwd",
 		Help: "print current directory",
 		Func: func(c *ishell.Context){
+			h.Add("pwd " + strings.Join(c.Args, " "))
 			printdir (c, &pwd)
 		},
 	})
@@ -132,6 +150,7 @@ func main () {
 		Name: "cd",
 		Help: "change directory",
 		Func: func(c *ishell.Context){
+		h.Add("cd " + strings.Join(c.Args, " "))
 		pwd =	cd(c, &pwd, &service)
 		},
 	})
