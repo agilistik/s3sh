@@ -20,14 +20,14 @@ Without parameters, the default profile from ~/.aws/credentials will be used.
 
 ### Currently supported commands:
 <pre>
-- cd [path]		Change directory.  Without 'path', will change to root '/'
-- cr <region>			Change region.
-- desc <name>			Describe 'name', which can be a bucket or an object key.
-- history		Prints out the history of the commands in the current session.
-- get <object> [path]		Download the 'object' to 'path'.  If no path specified, download to the current directory.
-- ls [path]		List contents of the 'path'.  Without a parameter, lists the 'current directory.'
-- put <object>			Upload 'object' to the current prefix.
-- pwd			Print current directory (prefix).
+cd [path]		Change directory.  Without 'path', will change to root '/'
+cr [region]			Change region.
+desc [name]			Describe 'name', which can be a bucket or an object key.
+history		Prints out the history of the commands in the current session.
+get [object] [path]		Download the 'object' to 'path'.  If no path specified, download to the current directory.
+ls [path]		List contents of the 'path'.  Without a parameter, lists the 'current directory.'
+put [object]			Upload 'object' to the current prefix.
+pwd			Print current directory (prefix).
 </pre>
 
 
