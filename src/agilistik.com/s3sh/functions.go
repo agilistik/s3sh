@@ -26,7 +26,7 @@ func cd (c *ishell.Context, pwd *string, service *ServiceSession) string {
 // 	The last element of the destination prefix:
 	var baseDir string
 // 	The path, consiting of bucket and prefix, split into an array:
-	var pathArr []string
+////`	var pathArr []string
 	if len (c.Args) > 1 {
 		c.Println("Please provide one argument to 'cd' to, or no arguments to 'cd /'")
 		return *pwd
@@ -41,7 +41,7 @@ func cd (c *ishell.Context, pwd *string, service *ServiceSession) string {
 	 'd' can be an relative or absolute path, and can contain refereces like '.' or '..'
 	 BuildPath will return an array representing the absolute path to the destination, taking care of the references.
 */
-		pathArr = BuildPath(*pwd, d)
+		pathArr := BuildPath(*pwd, d)
 // 	We can use 'd' here. Then, 'newPath' would not be needed.  But this would somewhat complicate "cd .." case: 
 		newPath = strings.Join(pathArr, "/")
 // 	The array returned by BuildPath can have more than one empty element in the beginning.  When joined, they produce '//':

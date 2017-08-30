@@ -67,6 +67,7 @@ func BuildPath (startPath, addPath string) []string  {
 	resArray	:= make([]string, len(startArray) + len(addArray))
 	copy (resArray, startArray)
 // Remove empty strings from the beginning of resArray:
+/*
 	for i, j := range(resArray){
 		if j != "" {
 			resArray = resArray[i:]
@@ -74,6 +75,7 @@ func BuildPath (startPath, addPath string) []string  {
 			
 		}
 	}	
+*/
 	addIndex := len(startArray)
 	
 	for _, j := range (addArray) {
