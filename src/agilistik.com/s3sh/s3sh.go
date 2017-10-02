@@ -114,7 +114,9 @@ func main () {
 				if len(list[keys[r]]) > 0 {	
 					c.Print(list[keys[r]] + "\t")
 				}
-				c.Println(keys[r])
+				if (len(keys[r]) > 0) {
+					c.Println(keys[r])
+				}
 			}
 		},
 	}) 

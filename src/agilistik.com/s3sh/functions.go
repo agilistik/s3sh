@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+//	"fmt"
 	"os"
 	"strings"
 	
@@ -270,6 +271,11 @@ func history (c *ishell.Context, h *Hist) {
 */
 func _ls (c *ishell.Context, pwd *string, service *ServiceSession) (map[string]string, error ) {
 	var err error = nil
+//	var contToken *string
+	contToken := ""
+	var returnKeys int64
+	done := false
+//	returnKeys = 1
 // 	map to return
 	list := make(map[string]string)
 	target := pwd
@@ -307,42 +313,58 @@ func _ls (c *ishell.Context, pwd *string, service *ServiceSession) (map[string]s
                        		 prefix = prefix[1:]
                		}
                 	c.Println("Prefix: " + prefix)
-                	input := &s3.ListObjectsV2Input{
-                       	 Bucket: aws.String(bucket),
-                       	 MaxKeys:aws.Int64(1024),
-                       	 Prefix: &prefix,
-               		 }
-                	result, err := service.Svc.ListObjectsV2(input)
-              		if err != nil {
-               		         c.Println("ERROR in ls...")
-               		         if aerr, ok := err.(awserr.Error); ok {
-               		                 switch aerr.Code() {
-               		                         case s3.ErrCodeNoSuchBucket:
-                	                                 c.Println(s3.ErrCodeNoSuchBucket, aerr.Error())
-                                        default:
-                                                c.Println(aerr.Error())
-                                                }
-                                        } else {
-                               			 c.Println(err.Error())
-                                }
+			input := &s3.ListObjectsV2Input{
+                        Bucket: aws.String(bucket),
+//                        MaxKeys:aws.Int64(1024*1024*1024),
+                        Prefix: &prefix,
+                         }
+			keys := NewStrSet()
+			for ; !done;  {
+				if contToken != "" {
+					input = input.SetContinuationToken(contToken)
+				}
+                		result, err := service.Svc.ListObjectsV2(input)
+              			if err != nil {
+               		       	  c.Println("ERROR in ls...")
+				  done = true
+               		       	  if aerr, ok := err.(awserr.Error); ok {
+               		       	          switch aerr.Code() {
+               		       	                  case s3.ErrCodeNoSuchBucket:
+                	       	                          c.Println(s3.ErrCodeNoSuchBucket, aerr.Error())
+                               	         default:
+                               	                 c.Println(aerr.Error())
+                               	                 }
+                               	         } else {
+                               				 c.Println(err.Error())
+                               	 }
 // 	We've got an error; return whatever we have by now.
-                        return list, err
-                        }
+                        	return list, err
+                       	 }
+				if *result.IsTruncated {
+					contToken = *result.NextContinuationToken
+					} else {
+					contToken = ""
+					}
+				returnKeys = *result.KeyCount
+				if (returnKeys < 1000 ) {
+					done = true
+				}
 //	 Need to make sure we list each 'subdirectory' (next level of prefix) only once:
-                keys := NewStrSet()
-                for _, item := range result.Contents {
-                        key := *item.Key
+//                keys := NewStrSet()
+ 	               for _, item := range result.Contents {
+       	                 key := *item.Key
 // 	cut the prefix off the beginning of the key:
-                        key = key[len(prefix):]
-                        if strings.Index(key, "/") == 0 {
-                                key = key[1:]
-                        }
+       	                 key = key[len(prefix):]
+       	                 if strings.Index(key, "/") == 0 {
+       	                         key = key[1:]
+       	                   }
 //	 If key contains a prefix, find the top level:                        
-                        if strings.Index(key, "/") > 0 {
-                                key = strings.Split(key,"/")[0]
-                        }
-                        keys.Add(key)
-                }
+       	                 if strings.Index(key, "/") > 0 {
+       	                         key = strings.Split(key,"/")[0]
+       	                   }
+       	                 keys.Add(key)
+                	}
+		}
 /*
 	 Key, or a part of a prefix, is the key in the map.  Region is the value.  For objects, don't list region -- do it only for the buckets.
 	 Think of using the value for some other data that might get useful.
