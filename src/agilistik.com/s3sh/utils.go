@@ -51,7 +51,7 @@ func (hist *Hist) Add (s string) {
 }
 
 /*
-	Input:  starting piont, usually pwd; and, new path.
+	Input:  starting point, usually pwd; and, new path.
 	Output:  the new path, if it is absolute.
 		Otherwise, starting piont + new path, with correct resolution of '.' and '..'
 	Output is an array representing the path.  It's caller's job to join it to build the path.
